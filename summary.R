@@ -70,6 +70,9 @@ master$District <-as.character(master$District)
 arrival_df <- master[master$TimeToArrive >0 & !is.na(master$TimeToArrive), ]
 dispatch_df <- master[master$TimeToDispatch >0 & !is.na(master$TimeToDispatch), ]
 
+#list o' NOPD districts in dataset
+districts <- c(levels(as.factor(master$District)))
+
 #time to arrival density plotting
 arrv_signal_dist <- ggplot(arrival_df, aes(x = as.numeric(TimeToArrive), fill = PGroup)) +
                      geom_density(alpha = .3) +
@@ -128,7 +131,6 @@ disp_district_dist <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch), colo
 
 #high priority signal benchmark comparison graph
 ideal <- data.frame(x=rnorm(10000000, mean = 1.85))
-top_priority_calls <- subset(dispatch_df, PGroup == "two")
 
 benchmark_comp <- ggplot(top_priority_calls, aes(x = as.numeric(TimeToDispatch), fill = "red")) +
                   scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch") +
@@ -175,7 +177,7 @@ district_summary_stats <- ddply(master, "as.character(District)", summarise,
                           TimeToArrive.sd = sd(TimeToArrive[TimeToArrive > 0], na.rm = T)
                           )
 
-district_high_priority_summary_stats <- ddply(top_priority_calls, "as.character(District)", summarise,
+district_high_priority_summary_stats <- ddply(master[master$PGroup == "two", ], "as.character(District)", summarise,
                                         TimeToDispatch.median = median(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                                         TimeToDispatch.mean = mean(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                                         TimeToDispatch.90 = quantile(TimeToDispatch[TimeToDispatch > 0], .9, na.rm = T),
@@ -188,49 +190,35 @@ district_high_priority_summary_stats <- ddply(top_priority_calls, "as.character(
                                         TimeToArrive.sd = sd(TimeToArrive[TimeToArrive > 0], na.rm = T)
                                         )
 
-
 write.csv(priority_summary_stats, "by-signal.csv", row.names = F)
 write.csv(crime_summary_stats, "by-crime.csv", row.names = F)
 write.csv(district_summary_stats, "by-district.csv", row.names = F)
 write.csv(district_high_priority_summary_stats, "by-district-high-priority.csv", row.names = F)
 
 # benchmark analysis
-fn_dist <- ecdf(top_priority_calls$TimeToDispatch)
-fn_arriv <- ecdf(top_priority_calls$TimeToArrive)
+fn_disp <- ecdf(dispatch_df[dispatch_df$PGroup == "two", ]$TimeToDispatch)
+fn_arriv <- ecdf(arrival_df[arrival_df$PGroup == "two", ]$TimeToArrive)
 
-#calculate what percentage of total sample falls within benchmark
-fn_dist(1.85)
+fn_disp(1.85)
 fn_arriv(5.73)
 
-#comparison of response times between police districts
-d_1 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "1"]
-d_2 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "2"]
-d_3 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "3"]
-d_4 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "4"]
-d_5 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "5"]
-d_6 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "6"]
-d_7 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "7"]
-d_8 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "8"]
-
-a_1 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "1"]
-a_2 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "2"]
-a_3 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "3"]
-a_4 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "4"]
-a_5 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "5"]
-a_6 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "6"]
-a_7 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "7"]
-a_8 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "8"]
-
 #shim for fligner test
-tdf <- data.frame(plot_call_df$Precinct, plot_call_df$TimeToDispatch)
-fligner.test(plot_call_df.TimeToDispatch ~ plot_call_df.Precinct, data = tdf)
+shim_disp <- data.frame(dispatch_df$District, dispatch_df$TimeToDispatch)
+shim_arriv <- data.frame(arrival_df$District, arrival_df$TimeToArrive)
 
-taf <- data.frame(plot_df$Precinct, plot_df$TimeToArrive)
-fligner.test(plot_df.TimeToArrive ~ plot_df.Precinct, data = taf)
+fligner_results_disp <- fligner.test(dispatch_df.TimeToDispatch ~ dispatch_df.District, data = shim_disp)
+fligner_results_arriv <- fligner.test(arrival_df.TimeToArrive ~ arrival_df.District, data = shim_arriv)
+
+if(fligner_results_disp$p.value < .05) {
+  cat("Dispatch times between districts are heteroskedastic")
+} else cat("Dispatch times between districts are homoskedastic")
+
+if(fligner_results_arriv$p.value < .05) {
+  cat("Arrival times between districts are heteroskedastic")
+} else cat("Arrival times between districts are homoskedastic")
 
 #k-s test to find samples with similar shape
-#endgame:
-  #ks.test(as.numeric(d_1), as.numeric(d_2))
+#endgame: ks.test(as.numeric(d_1), as.numeric(d_2))
 
 disp_times_district <- list(d_1, d_2, d_3, d_4, d_5, d_6, d_7, d_8)
 arriv_times_district <- list(a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8)
