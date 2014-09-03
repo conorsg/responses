@@ -4,20 +4,20 @@ library(ggplot2)
 library(plyr)
 
 #load data
-df <- read.csv(file="data.csv", sep=",", header=T)
+master <- read.csv(file="data.csv", sep=",", header=T)
 
 #use only citizen generated calls
-df <- df[df$SelfInitiated == "N", ]
+master <- master[master$SelfInitiated == "N", ]
 
 #convert to time
-df$TimeCreate <- as.POSIXct(df$TimeCreate, format="%d-%m-%Y %H:%M:%S")
-df$TimeDispatch <- as.POSIXct(df$TimeDispatch, format="%d-%m-%Y %H:%M:%S")
-df$TimeArrival <- as.POSIXct(df$TimeArrival, format="%d-%m-%Y %H:%M:%S")
-df$TimeClosed <- as.POSIXct(df$TimeClosed, format="%d-%m-%Y %H:%M:%S")
+master$TimeCreate <- as.POSIXct(master$TimeCreate, format="%d-%m-%Y %H:%M:%S")
+master$TimeDispatch <- as.POSIXct(master$TimeDispatch, format="%d-%m-%Y %H:%M:%S")
+master$TimeArrival <- as.POSIXct(master$TimeArrival, format="%d-%m-%Y %H:%M:%S")
+master$TimeClosed <- as.POSIXct(master$TimeClosed, format="%d-%m-%Y %H:%M:%S")
 
 #calculate time differences
-df$TimeToDispatch <- difftime(df$TimeDispatch, df$TimeCreate, units="mins")
-df$TimeToArrive <- difftime(df$TimeArrival, df$TimeDispatch, units="mins")
+master$TimeToDispatch <- difftime(master$TimeDispatch, master$TimeCreate, units="mins")
+master$TimeToArrive <- difftime(master$TimeArrival, master$TimeDispatch, units="mins")
 
 #crime categories
 PropTypes <- c("67P", "55", "67F", "67A", "67", "56", "62", "67S", "62C", "62R", "67B", "56D", "62B", "65", "67E", "67C", "65P", "65J")
@@ -56,83 +56,79 @@ assignGroup <- function(x) {
   )
 }
 
-df$PGroup <- lapply(df$Priority, assignGroup)
-df$CrimeType <- lapply(df$Type, assignType)
-df$Precinct <- substring(as.character(df$Beat), 1, 1)
+#find signal priority, crime type, and NOPD district
+master$PGroup <- lapply(master$Priority, assignGroup)
+master$CrimeType <- lapply(master$Type, assignType)
+master$District <- substring(as.character(master$Beat), 1, 1)
+
+#type coercions for plots
+master$PGroup <- as.character(master$PGroup)
+master$CrimeType <- as.character(master$CrimeType)
+master$District <-as.character(master$District)
+
+#handy subsets of dispatch and arrival times without NAs and neg values
+arrival_df <- master[master$TimeToArrive >0 & !is.na(master$TimeToArrive), ]
+dispatch_df <- master[master$TimeToDispatch >0 & !is.na(master$TimeToDispatch), ]
 
 #time to arrival density plotting
-plot_df <- df[df$TimeToArrive > 0, ]
-plot_df <- plot_df[!is.na(plot_df$TimeToArrive), ]
-plot_df$PGroup <- as.character(plot_df$PGroup)
-plot_df$CrimeType <- as.character(plot_df$CrimeType)
-plot_df$Precinct <-as.character(plot_df$Precinct)
+arrv_signal_dist <- ggplot(arrival_df, aes(x = as.numeric(TimeToArrive), fill = PGroup)) +
+                     geom_density(alpha = .3) +
+                     geom_vline(xintercept = 5.73, linetype = "dashed", size = .6) +
+                     scale_x_continuous(limits = c(0, 30), name = "Minutes between dispatch and arrival at scene") +
+                     scale_fill_discrete(name = "Signal priority", breaks = c("zero", "one", "two")) +
+                     geom_hline(yintercept = 0, colour = "#999999", size = .6) +
+                     geom_vline(xintercept = 0, colour = "#999999", size = .6) +
+                     ggsave("arrv-signal-dist.png", width = 12, height = 8)
 
-priority_dist <- ggplot(plot_df, aes(x = as.numeric(TimeToArrive), fill = PGroup)) +
-                 geom_density(alpha = .3) +
-                 geom_vline(xintercept = 5.73, linetype = "dashed", size = .6) +
-                 scale_x_continuous(limits = c(0, 30), name = "Minutes between dispatch and arrival at scene") +
-                 scale_fill_discrete(name = "Signal priority", breaks = c("zero", "one", "two")) +
-                 geom_hline(yintercept = 0, colour = "#999999", size = .6) +
-                 geom_vline(xintercept = 0, colour = "#999999", size = .6) +
-                 ggsave("priority-dist.png", width = 12, height = 8)
+arrv_crime_dist <- ggplot(arrival_df, aes(x=as.numeric(TimeToArrive), colour = CrimeType, fill = CrimeType)) +
+                    geom_density(alpha = .2) +
+                    scale_x_continuous(limits = c(0, 50), name = "Minutes between dispatch and arrival at scene") +
+                    scale_colour_discrete(name = "Crime type") +
+                    scale_fill_discrete(guide = F) +
+                    geom_hline(yintercept = 0, colour = "#999999", size = .6) +
+                    geom_vline(xintercept = 0, colour = "#999999", size = .6) +
+                    ggsave("arrv-crime-dist.png", width = 12, height = 8)
 
-crime_dist <- ggplot(plot_df, aes(x=as.numeric(TimeToArrive), colour = CrimeType, fill = CrimeType)) +
-              geom_density(alpha = .2) +
-              scale_x_continuous(limits = c(0, 50), name = "Minutes between dispatch and arrival at scene") +
-              scale_colour_discrete(name = "Crime type") +
-              scale_fill_discrete(guide = F) +
-              geom_hline(yintercept = 0, colour = "#999999", size = .6) +
-              geom_vline(xintercept = 0, colour = "#999999", size = .6) +
-              ggsave("crime-dist.png", width = 12, height = 8)
-
-precinct_dist <- ggplot(plot_df, aes(x=as.numeric(TimeToArrive), colour = Precinct, fill = Precinct)) +
-                 geom_density(alpha = .2) +
-                 scale_x_continuous(limits = c(0, 50), name = "Minutes between dispatch and arrival at scene") +
-                 scale_colour_discrete(name = "Police District") +
-                 scale_fill_discrete(guide = F) +
-                 geom_hline(yintercept = 0, colour = "#999999", size = .6) +
-                 geom_vline(xintercept = 0, colour = "#999999", size = .6) +
-                 ggsave("precinct-dist.png", width = 12, height = 8)
-
-# call to dispatch densities and summary
-plot_call_df <- df[df$TimeToDispatch > 0, ]
-plot_call_df <- plot_call_df[!is.na(plot_call_df$TimeToDispatch), ]
-plot_call_df$PGroup <- as.character(plot_call_df$PGroup)
-plot_call_df$CrimeType <- as.character(plot_call_df$CrimeType)
-
-pty_mn_dispatch <- ddply(plot_call_df, "PGroup", summarise, TimeToDispatch.median = median(TimeToDispatch))
-
-priority_dist_dispatch <- ggplot(plot_call_df, aes(x = as.numeric(TimeToDispatch), colour = PGroup)) +
-                          geom_density(alpha = .3) +
-                          geom_vline(xintercept = 1.85, linetype = "dashed", size = .6) +
-                          #geom_vline(data=pty_mn_dispatch, aes(xintercept=as.numeric(TimeToDispatch.median),  colour=PGroup), linetype="dashed", size=1) +
-                          scale_x_continuous(limits = c(0, 50), name = "Minutes between call and officer dispatch") +
-                          scale_colour_discrete(name = "Signal priority", breaks= c("zero", "one", "two")) +
-                          geom_hline(yintercept = 0, colour = "#999999", size = .6) +
-                          geom_vline(xintercept = 0, colour = "#999999", size = .6) +
-                          ggsave("priority-dist-dispatch.png", width = 12, height = 8)
-
-crime_dist_dispatch <- ggplot(plot_call_df, aes(x=as.numeric(TimeToDispatch), colour = CrimeType, fill = CrimeType)) +
+arrv_district_dist <- ggplot(arrival_df, aes(x=as.numeric(TimeToArrive), colour = District, fill = District)) +
                        geom_density(alpha = .2) +
-                       scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch") +
-                       scale_colour_discrete(name = "Crime type") +
+                       scale_x_continuous(limits = c(0, 50), name = "Minutes between dispatch and arrival at scene") +
+                       scale_colour_discrete(name = "Police District") +
                        scale_fill_discrete(guide = F) +
                        geom_hline(yintercept = 0, colour = "#999999", size = .6) +
                        geom_vline(xintercept = 0, colour = "#999999", size = .6) +
-                       ggsave("crime-dist-dispatch.png", width = 12, height = 8)
+                       ggsave("arrv-district-dist.png", width = 12, height = 8)
 
-precinct_dist_dispatch <- ggplot(plot_call_df, aes(x=as.numeric(TimeToDispatch), colour = Precinct, fill = Precinct)) +
-                          geom_density(alpha = .2) +
-                          scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch") +
-                          scale_colour_discrete(name = "Police District") +
-                          scale_fill_discrete(guide = F) +
-                          geom_hline(yintercept = 0, colour = "#999999", size = .6) +
-                          geom_vline(xintercept = 0, colour = "#999999", size = .6) +
-                          ggsave("precinct-dist-dispatch.png", width = 12, height = 8)
+#time to dispatch density plotting
+disp_signal_dist <- ggplot(dispatch_df, aes(x = as.numeric(TimeToDispatch), colour = PGroup)) +
+                    geom_density(alpha = .3) +
+                    geom_vline(xintercept = 1.85, linetype = "dashed", size = .6) +
+                    scale_x_continuous(limits = c(0, 50), name = "Minutes between call and officer dispatch") +
+                    scale_colour_discrete(name = "Signal priority", breaks= c("zero", "one", "two")) +
+                    geom_hline(yintercept = 0, colour = "#999999", size = .6) +
+                    geom_vline(xintercept = 0, colour = "#999999", size = .6) +
+                    ggsave("disp-signal-dist.png", width = 12, height = 8)
+
+disp_crime_dist <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch), colour = CrimeType, fill = CrimeType)) +
+                   geom_density(alpha = .2) +
+                   scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch") +
+                   scale_colour_discrete(name = "Crime type") +
+                   scale_fill_discrete(guide = F) +
+                   geom_hline(yintercept = 0, colour = "#999999", size = .6) +
+                   geom_vline(xintercept = 0, colour = "#999999", size = .6) +
+                   ggsave("disp-crime-dist.png", width = 12, height = 8)
+
+disp_district_dist <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch), colour = District, fill = District)) +
+                      geom_density(alpha = .2) +
+                      scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch") +
+                      scale_colour_discrete(name = "Police District") +
+                      scale_fill_discrete(guide = F) +
+                      geom_hline(yintercept = 0, colour = "#999999", size = .6) +
+                      geom_vline(xintercept = 0, colour = "#999999", size = .6) +
+                      ggsave("disp-district-dist.png", width = 12, height = 8)
 
 #high priority signal benchmark comparison graph
 ideal <- data.frame(x=rnorm(10000000, mean = 1.85))
-top_priority_calls <- subset(plot_call_df, PGroup == "two")
+top_priority_calls <- subset(dispatch_df, PGroup == "two")
 
 benchmark_comp <- ggplot(top_priority_calls, aes(x = as.numeric(TimeToDispatch), fill = "red")) +
                   scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch") +
@@ -144,7 +140,7 @@ benchmark_comp <- ggplot(top_priority_calls, aes(x = as.numeric(TimeToDispatch),
                   ggsave("signal-dispatch-comp.png", width = 12, height = 8)
 
 #summary tables
-priority_summary_stats <- ddply(df, "as.character(PGroup)", summarise,
+priority_summary_stats <- ddply(master, "as.character(PGroup)", summarise,
                           TimeToDispatch.median = median(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                           TimeToDispatch.mean = mean(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                           TimeToDispatch.n = sum(!is.na(TimeToDispatch[TimeToDispatch > 0])),
@@ -155,7 +151,7 @@ priority_summary_stats <- ddply(df, "as.character(PGroup)", summarise,
                           TimeToArrive.sd = sd(TimeToArrive[TimeToArrive > 0], na.rm = T)
                           )
 
-crime_summary_stats <- ddply(df, "as.character(CrimeType)", summarise,
+crime_summary_stats <- ddply(master, "as.character(CrimeType)", summarise,
                         TimeToDispatch.median = median(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                         TimeToDispatch.mean = mean(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                         TimeToDispatch.n = sum(!is.na(TimeToDispatch[TimeToDispatch > 0])),
@@ -166,7 +162,7 @@ crime_summary_stats <- ddply(df, "as.character(CrimeType)", summarise,
                         TimeToArrive.sd = sd(TimeToArrive[TimeToArrive > 0], na.rm = T)
                         )
 
-precinct_summary_stats <- ddply(df, "as.character(Precinct)", summarise,
+district_summary_stats <- ddply(master, "as.character(District)", summarise,
                           TimeToDispatch.median = median(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                           TimeToDispatch.mean = mean(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                           TimeToDispatch.90 = quantile(TimeToDispatch[TimeToDispatch > 0], .9, na.rm = T),
@@ -179,7 +175,7 @@ precinct_summary_stats <- ddply(df, "as.character(Precinct)", summarise,
                           TimeToArrive.sd = sd(TimeToArrive[TimeToArrive > 0], na.rm = T)
                           )
 
-precinct_high_priority_summary_stats <- ddply(top_priority_calls, "as.character(Precinct)", summarise,
+district_high_priority_summary_stats <- ddply(top_priority_calls, "as.character(District)", summarise,
                                         TimeToDispatch.median = median(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                                         TimeToDispatch.mean = mean(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                                         TimeToDispatch.90 = quantile(TimeToDispatch[TimeToDispatch > 0], .9, na.rm = T),
@@ -195,8 +191,8 @@ precinct_high_priority_summary_stats <- ddply(top_priority_calls, "as.character(
 
 write.csv(priority_summary_stats, "by-signal.csv", row.names = F)
 write.csv(crime_summary_stats, "by-crime.csv", row.names = F)
-write.csv(precinct_summary_stats, "by-precinct.csv", row.names = F)
-write.csv(precinct_high_priority_summary_stats, "by-precinct-high-priority.csv", row.names = F)
+write.csv(district_summary_stats, "by-district.csv", row.names = F)
+write.csv(district_high_priority_summary_stats, "by-district-high-priority.csv", row.names = F)
 
 # benchmark analysis
 fn_dist <- ecdf(top_priority_calls$TimeToDispatch)
@@ -207,29 +203,23 @@ fn_dist(1.85)
 fn_arriv(5.73)
 
 #comparison of response times between police districts
-d_1 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "1"]
-d_2 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "2"]
-d_3 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "3"]
-d_4 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "4"]
-d_5 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "5"]
-d_6 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "6"]
-d_7 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "7"]
-d_8 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "8"]
+d_1 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "1"]
+d_2 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "2"]
+d_3 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "3"]
+d_4 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "4"]
+d_5 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "5"]
+d_6 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "6"]
+d_7 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "7"]
+d_8 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "8"]
 
-a_1 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "1"]
-a_2 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "2"]
-a_3 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "3"]
-a_4 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "4"]
-a_5 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "5"]
-a_6 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "6"]
-a_7 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "7"]
-a_8 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "8"]
-
-# kruskal.test(list(d_1, d_2, d_3, d_4, d_5, d_6, d_7, d_8))
-# kruskal.test(list(a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8))
-
-#fit <- aov(as.numeric(TimeToDispatch) ~ Precinct, df[df$TimeToDispatch > 0, ], na.action = na.omit)
-#TukeyHSD(fit)
+a_1 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "1"]
+a_2 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "2"]
+a_3 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "3"]
+a_4 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "4"]
+a_5 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "5"]
+a_6 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "6"]
+a_7 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "7"]
+a_8 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "8"]
 
 #shim for fligner test
 tdf <- data.frame(plot_call_df$Precinct, plot_call_df$TimeToDispatch)
@@ -253,5 +243,8 @@ ks_pairwise <- function(x, list) {
 lapply(disp_times_district, ks_pairwise, list = disp_times_district)
 
 #panel charts of distributions
-fbase <- ggplot(plot_call_df, aes(x=as.numeric(TimeToDispatch))) + geom_density(alpha = .3) + scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
+fbase <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch))) +
+          geom_density(alpha = .3) +
+          scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
+
 fbase + facet_grid(Precinct ~ .)
