@@ -224,12 +224,8 @@ pull_by_district <- function(x, df, column) {
     subset(df, District == x, select = column)
 }
 
-disp_times_district <- sapply(districts, pull_by_district, df = dispatch_df, column = "TimeToDispatch")
-  # disp_times_district.n <- max(unlist(lapply(disp_times_district, function(x) length(x))))
-  # lapply(disp_times_district, function(x) length(x) <- disp_times_district.n)
-  # disp_times_district <- do.call(cbind, disp_times_district)
-
-arriv_times_district <- list(a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8)
+disp_times_district <- sapply(districts, pull_by_district, df = dispatch_df, column = "TimeToDispatch") #creates a recursive list. sub-lists are named. access like so disp_times_district["1.TimeToDispatch"]
+arriv_times_district <- sapply(districts, pull_by_district, df = arrival_df, column = "TimeToArrive")
 
 ks_pairwise <- function(x, list) {
   y <- list[which(list == x) + 1]
