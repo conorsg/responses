@@ -140,7 +140,7 @@ benchmark_comp <- ggplot(top_priority_calls, aes(x = as.numeric(TimeToDispatch),
                   ggsave("signal-dispatch-comp.png", width = 12, height = 8)
 
 #summary tables
-priority_summary_stats <- ddply(df, "as.character(PGroup)", summarise,
+priority_summary_stats <- ddply(master, "as.character(PGroup)", summarise,
                           TimeToDispatch.median = median(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                           TimeToDispatch.mean = mean(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                           TimeToDispatch.n = sum(!is.na(TimeToDispatch[TimeToDispatch > 0])),
@@ -151,7 +151,7 @@ priority_summary_stats <- ddply(df, "as.character(PGroup)", summarise,
                           TimeToArrive.sd = sd(TimeToArrive[TimeToArrive > 0], na.rm = T)
                           )
 
-crime_summary_stats <- ddply(df, "as.character(CrimeType)", summarise,
+crime_summary_stats <- ddply(master, "as.character(CrimeType)", summarise,
                         TimeToDispatch.median = median(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                         TimeToDispatch.mean = mean(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                         TimeToDispatch.n = sum(!is.na(TimeToDispatch[TimeToDispatch > 0])),
@@ -162,7 +162,7 @@ crime_summary_stats <- ddply(df, "as.character(CrimeType)", summarise,
                         TimeToArrive.sd = sd(TimeToArrive[TimeToArrive > 0], na.rm = T)
                         )
 
-district_summary_stats <- ddply(df, "as.character(District)", summarise,
+district_summary_stats <- ddply(master, "as.character(District)", summarise,
                           TimeToDispatch.median = median(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                           TimeToDispatch.mean = mean(TimeToDispatch[TimeToDispatch > 0], na.rm = T),
                           TimeToDispatch.90 = quantile(TimeToDispatch[TimeToDispatch > 0], .9, na.rm = T),
@@ -203,23 +203,23 @@ fn_dist(1.85)
 fn_arriv(5.73)
 
 #comparison of response times between police districts
-d_1 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "1"]
-d_2 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "2"]
-d_3 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "3"]
-d_4 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "4"]
-d_5 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "5"]
-d_6 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "6"]
-d_7 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "7"]
-d_8 <- df$TimeToDispatch[df$TimeToDispatch > 0 & !is.na(df$TimeToDispatch) & df$Precinct == "8"]
+d_1 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "1"]
+d_2 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "2"]
+d_3 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "3"]
+d_4 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "4"]
+d_5 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "5"]
+d_6 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "6"]
+d_7 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "7"]
+d_8 <- master$TimeToDispatch[master$TimeToDispatch > 0 & !is.na(master$TimeToDispatch) & master$Precinct == "8"]
 
-a_1 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "1"]
-a_2 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "2"]
-a_3 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "3"]
-a_4 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "4"]
-a_5 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "5"]
-a_6 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "6"]
-a_7 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "7"]
-a_8 <- df$TimeToArrive[df$TimeToArrive > 0 & !is.na(df$TimeToArrive) & df$Precinct == "8"]
+a_1 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "1"]
+a_2 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "2"]
+a_3 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "3"]
+a_4 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "4"]
+a_5 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "5"]
+a_6 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "6"]
+a_7 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "7"]
+a_8 <- master$TimeToArrive[master$TimeToArrive > 0 & !is.na(master$TimeToArrive) & master$Precinct == "8"]
 
 #shim for fligner test
 tdf <- data.frame(plot_call_df$Precinct, plot_call_df$TimeToDispatch)
