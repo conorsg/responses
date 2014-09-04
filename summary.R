@@ -250,15 +250,15 @@ district_cluster_disp <- which(ks_dispatch > .05, arr.ind = T)
 district_cluster_arriv <- which(ks_arrival > .05, arr.ind = T)
 
 #panel charts of distributions
-f_base <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch))) +
+f_base <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch), fill = District)) +
           geom_density(alpha = .3) +
           scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
 
 f_base + facet_grid(District ~ .)
 
-f_disp_1.5 <- ggplot(dispatch_df[dispatch_df$District == "1" | dispatch_df$District == "5", ], aes(x=as.numeric(TimeToDispatch))) +
-          geom_density(alpha = .3) +
-          scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
+f_disp_1.5 <- ggplot(dispatch_df[dispatch_df$District == "1" | dispatch_df$District == "5", ], aes(x=as.numeric(TimeToDispatch), fill = District)) +
+              geom_density(alpha = .3) +
+              scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
 
 f_disp_1.5 + facet_grid(District ~ .)
 
