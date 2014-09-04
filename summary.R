@@ -235,10 +235,10 @@ ks_tests_dispatch <- ldply(
                             ks.test(as.numeric(unlist(x)), as.numeric(disp_times_district[[as.numeric(n)]]))$p.value
                           }
                         })
-
+# this works. need to store in dataframe
 for (n in districts[districts != "N"]) {
     for (i in districts[districts != "N"]) {
-      ks.test(as.numeric(disp_times_district[[n]]), as.numeric(disp_times_district[[i]]))$p.value
+      print(ks.test(as.numeric(disp_times_district[[as.numeric(n)]]), as.numeric(disp_times_district[[as.numeric(i)]]))$p.value)
     }
 }
 
