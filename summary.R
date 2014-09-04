@@ -245,6 +245,10 @@ crosstable_ks <- function(input, result) {
 ks_dispatch <- crosstable_ks(disp_times_district, ks_dispatch)
 ks_arrival <- crosstable_ks(arriv_times_district, ks_arrival)
 
+#find which districts have similar shapes
+district_cluster_disp <- which(ks_dispatch > .05, arr.ind = T)
+district_cluster_arriv <- which(ks_arrival > .05, arr.ind = T)
+
 #panel charts of distributions
 fbase <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch))) +
           geom_density(alpha = .3) +
