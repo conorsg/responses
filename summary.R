@@ -218,21 +218,23 @@ if(fligner_results_arriv$p.value < .05) {
 } else cat("Arrival times between districts are homoskedastic")
 
 #k-s test to find samples with similar shape
-#endgame: ks.test(as.numeric(d_1), as.numeric(d_2))
+#endgame: ks.test(as.numeric(disp_times_district[[1]]), as.numeric(disp_times_district[[2]]))$p.value
+  #maybe just do two nested for loops? for every n in districts, run through all n in districts?
 
-pull_by_district <- function(x, df, column) {
+get_each_district <- function(x, df, column) {
     subset(df, District == x, select = column)
 }
 
-disp_times_district <- sapply(districts, pull_by_district, df = dispatch_df, column = "TimeToDispatch") #creates a recursive list. sub-lists are named. access like so disp_times_district["1.TimeToDispatch"]
-arriv_times_district <- sapply(districts, pull_by_district, df = arrival_df, column = "TimeToArrive")
+disp_times_district <- sapply(districts, get_each_district, df = dispatch_df, column = "TimeToDispatch") #creates a recursive list. sub-lists are named. access like so: disp_times_district["1.TimeToDispatch"]
+arriv_times_district <- sapply(districts, get_each_district, df = arrival_df, column = "TimeToArrive")
 
-ks_pairwise <- function(x, list) {
-  y <- list[which(list == x) + 1]
-  ks.test(x, y)
-}
-
-lapply(disp_times_district, ks_pairwise, list = disp_times_district)
+ks_tests_dispatch <- ldply(
+                        .data = disp_times_district,
+                        .fun = function(x) {
+                          for(n in districts[districts != "N"]) {
+                            ks.test(as.numeric(unlist(x)), as.numeric(disp_times_district[[as.numeric(n)]]))$p.value
+                          }
+                        })
 
 #panel charts of distributions
 fbase <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch))) +
