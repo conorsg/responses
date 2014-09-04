@@ -236,6 +236,12 @@ ks_tests_dispatch <- ldply(
                           }
                         })
 
+for (n in districts[districts != "N"]) {
+    for (i in districts[districts != "N"]) {
+      ks.test(as.numeric(disp_times_district[[n]]), as.numeric(disp_times_district[[i]]))$p.value
+    }
+}
+
 #panel charts of distributions
 fbase <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch))) +
           geom_density(alpha = .3) +
