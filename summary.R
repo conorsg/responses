@@ -228,18 +228,19 @@ get_each_district <- function(x, df, column) {
 disp_times_district <- sapply(districts, get_each_district, df = dispatch_df, column = "TimeToDispatch") #creates a recursive list. sub-lists are named. access like so: disp_times_district["1.TimeToDispatch"]
 arriv_times_district <- sapply(districts, get_each_district, df = arrival_df, column = "TimeToArrive")
 
-ks_tests_dispatch <- ldply(
-                        .data = disp_times_district,
-                        .fun = function(x) {
-                          for(n in districts[districts != "N"]) {
-                            ks.test(as.numeric(unlist(x)), as.numeric(disp_times_district[[as.numeric(n)]]))$p.value
-                          }
-                        })
+# ks_tests_dispatch <- ldply(
+#                         .data = disp_times_district,
+#                         .fun = function(x) {
+#                           for(n in districts[districts != "N"]) {
+#                             ks.test(as.numeric(unlist(x)), as.numeric(disp_times_district[[as.numeric(n)]]))$p.value
+#                           }
+#                         })
+
 # this works. need to store in dataframe
 for (n in districts[districts != "N"]) {
-    for (i in districts[districts != "N"]) {
-      print(ks.test(as.numeric(disp_times_district[[as.numeric(n)]]), as.numeric(disp_times_district[[as.numeric(i)]]))$p.value)
-    }
+  for (i in districts[districts != "N"]) {
+    test_col <- rbind(ks.test(as.numeric(disp_times_district[[as.numeric(n)]]), as.numeric(disp_times_district[[as.numeric(i)]]))$p.value)
+  }
 }
 
 #panel charts of distributions
