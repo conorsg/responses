@@ -251,22 +251,23 @@ district_cluster_arriv <- which(ks_arrival > .05, arr.ind = T)
 
 #panel charts of distributions
 
-  #hack out District "N"
-  dispatch_df <- dispatch_df[dispatch_df$District != "N", ]
-  districts <- districts[1:8]
+#hack out District "N"
+dispatch_df <- dispatch_df[dispatch_df$District != "N", ]
+arrival_df <- arrival_df[arrival_df$District != "N", ]
+districts <- districts[1:8]
 
-f_base <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch), fill = District)) +
-          geom_density(alpha = .3) +
-          geom_hline(yintercept = 0, colour = "#999999", size = .6) +
-          geom_vline(xintercept = 0, colour = "#999999", size = .6) +
-          scale_x_continuous(limits = c(0, 300), name = "Minutes between call and officer dispatch")
+f_disp_base <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch), fill = District)) +
+                geom_density(alpha = .3) +
+                geom_hline(yintercept = 0, colour = "#999999", size = .6) +
+                geom_vline(xintercept = 0, colour = "#999999", size = .6) +
+                scale_x_continuous(limits = c(0, 300), name = "Minutes between call and officer dispatch")
 
-  f_base.q <- ddply(dispatch_df, "District", summarise, median = as.numeric(median(TimeToDispatch)), ninth = as.numeric(quantile(TimeToDispatch, .9)))
+  f_disp_base.q <- ddply(dispatch_df, "District", summarise, median = as.numeric(median(TimeToDispatch)), ninth = as.numeric(quantile(TimeToDispatch, .9)))
 
-  f_base + facet_grid(District ~ .) +
-            geom_vline(data=f_base.q, aes(xintercept=median)) +
-            geom_vline(data=f_base.q, aes(xintercept=ninth), linetype = "dashed") +
-            ggsave("facet-all.png", width = 8.5, height = 11)
+  f_disp_base + facet_grid(District ~ .) +
+                geom_vline(data=f_disp_base.q, aes(xintercept=median)) +
+                geom_vline(data=f_disp_base.q, aes(xintercept=ninth), linetype = "dashed") +
+                ggsave("facet-dispatch-all.png", width = 8.5, height = 11)
 
 f_disp_1.5 <- ggplot(dispatch_df[dispatch_df$District == "1" | dispatch_df$District == "5", ], aes(x=as.numeric(TimeToDispatch), fill = District)) +
               geom_density(alpha = .3) +
@@ -300,3 +301,65 @@ f_disp_8.2 <- ggplot(dispatch_df[dispatch_df$District == "8" | dispatch_df$Distr
                 geom_vline(data=f_disp_8.2.q, aes(xintercept=median)) +
                 geom_vline(data=f_disp_8.2.q, aes(xintercept=ninth)) +
                 ggsave("facet-8-2.png", width = 12, height = 12)
+
+#do it all again with arrival time. i seem to have repeated myself
+f_arriv_base <- ggplot(arrival_df, aes(x=as.numeric(TimeToArrive), fill = District)) +
+                geom_density(alpha = .3) +
+                geom_hline(yintercept = 0, colour = "#999999", size = .6) +
+                geom_vline(xintercept = 0, colour = "#999999", size = .6) +
+                scale_x_continuous(limits = c(0, 30), name = "Minutes between officer dispatch and arrival")
+
+  f_arriv_base.q <- ddply(arrival_df, "District", summarise, median = as.numeric(median(TimeToArrive)), ninth = as.numeric(quantile(TimeToArrive, .9)))
+
+  f_arriv_base + facet_grid(District ~ .) +
+                geom_vline(data=f_arriv_base.q, aes(xintercept=median)) +
+                geom_vline(data=f_arriv_base.q, aes(xintercept=ninth), linetype = "dashed") +
+                ggsave("facet-arrive-all.png", width = 8.5, height = 11)
+
+f_arriv_1.6 <- ggplot(arrival_df[arrival_df$District == "1" | arrival_df$District == "6", ], aes(x=as.numeric(TimeToArrive), fill = District)) +
+              geom_density(alpha = .3) +
+              geom_hline(yintercept = 0, colour = "#999999", size = .6) +
+              geom_vline(xintercept = 0, colour = "#999999", size = .6) +
+              scale_x_continuous(limits = c(0, 25), name = "Minutes between officer dispatch and arrival")
+
+  f_arriv_1.6.q <- data.frame( District = c(1, 6),
+                              median = c(as.numeric(median(arrival_df[arrival_df$District == "1", ]$TimeToArrive)), as.numeric(median(arrival_df[arrival_df$District == "6", ]$TimeToArrive))),
+                              ninth = c(as.numeric(quantile(arrival_df[arrival_df$District == "1", ]$TimeToArrive, .9)), as.numeric(quantile(arrival_df[arrival_df$District == "6", ]$TimeToArrive, .9)))
+                            )
+
+  f_arriv_1.6 + facet_grid(District ~ .) +
+                geom_vline(data=f_arriv_1.6.q, aes(xintercept=median)) +
+                geom_vline(data=f_arriv_1.6.q, aes(xintercept=ninth), linetype = "dashed") +
+                ggsave("facet-arrive-1-6.png", width = 12, height = 12)
+
+f_arriv_3.2 <- ggplot(arrival_df[arrival_df$District == "3" | arrival_df$District == "2", ], aes(x=as.numeric(TimeToArrive), fill = District)) +
+              geom_density(alpha = .3) +
+              geom_hline(yintercept = 0, colour = "#999999", size = .6) +
+              geom_vline(xintercept = 0, colour = "#999999", size = .6) +
+              scale_x_continuous(limits = c(0, 30), name = "Minutes between officer dispatch and arrival")
+
+  f_arriv_3.2.q <- data.frame( District = c(3, 2),
+                              median = c(as.numeric(median(arrival_df[arrival_df$District == "3", ]$TimeToArrive)), as.numeric(median(arrival_df[arrival_df$District == "2", ]$TimeToArrive))),
+                              ninth = c(as.numeric(quantile(arrival_df[arrival_df$District == "3", ]$TimeToArrive, .9)), as.numeric(quantile(arrival_df[arrival_df$District == "2", ]$TimeToArrive, .9)))
+                            )
+
+  f_arriv_3.2 + facet_grid(District ~ .) +
+                geom_vline(data=f_arriv_3.2.q, aes(xintercept=median)) +
+                geom_vline(data=f_arriv_3.2.q, aes(xintercept=ninth), linetype = "dashed") +
+                ggsave("facet-arrive-3-2.png", width = 12, height = 12)
+
+f_arriv_4.7 <- ggplot(arrival_df[arrival_df$District == "4" | arrival_df$District == "7", ], aes(x=as.numeric(TimeToArrive), fill = District)) +
+              geom_density(alpha = .3) +
+              geom_hline(yintercept = 0, colour = "#999999", size = .6) +
+              geom_vline(xintercept = 0, colour = "#999999", size = .6) +
+              scale_x_continuous(limits = c(0, 25), name = "Minutes between officer dispatch and arrival")
+
+  f_arriv_4.7.q <- data.frame( District = c(4, 7),
+                              median = c(as.numeric(median(arrival_df[arrival_df$District == "4", ]$TimeToArrive)), as.numeric(median(arrival_df[arrival_df$District == "7", ]$TimeToArrive))),
+                              ninth = c(as.numeric(quantile(arrival_df[arrival_df$District == "4", ]$TimeToArrive, .9)), as.numeric(quantile(arrival_df[arrival_df$District == "7", ]$TimeToArrive, .9)))
+                            )
+
+  f_arriv_4.7 + facet_grid(District ~ .) +
+                geom_vline(data=f_arriv_4.7.q, aes(xintercept=median)) +
+                geom_vline(data=f_arriv_4.7.q, aes(xintercept=ninth), linetype = "dashed") +
+                ggsave("facet-arrive-4-7.png", width = 12, height = 12)
