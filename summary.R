@@ -254,16 +254,23 @@ f_base <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch), fill = District)
           geom_density(alpha = .3) +
           scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
 
-f_base + facet_grid(District ~ .)
+  f_base + facet_grid(District ~ .)
 
 f_disp_1.5 <- ggplot(dispatch_df[dispatch_df$District == "1" | dispatch_df$District == "5", ], aes(x=as.numeric(TimeToDispatch), fill = District)) +
               geom_density(alpha = .3) +
               scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
 
-f_disp_1.5 + facet_grid(District ~ .)
+  #creates dataframe with median and 90th percentile for facet grid call to iterate through
+  f_disp_1.5.q <- data.frame( District = c(1, 5),
+                              median = c(as.numeric(median(dispatch_df[dispatch_df$District == "1", ]$TimeToDispatch)), as.numeric(median(dispatch_df[dispatch_df$District == "5", ]$TimeToDispatch))),
+                              ninth = c(as.numeric(quantile(dispatch_df[dispatch_df$District == "1", ]$TimeToDispatch, .9)), as.numeric(quantile(dispatch_df[dispatch_df$District == "5", ]$TimeToDispatch, .9))),
+                              row.names = c("1st District", "5th District")
+                            )
+
+  f_disp_1.5 + facet_grid(District ~ .) + geom_vline(data=f_disp_1.5.q, aes(xintercept=median)) + geom_vline(data=f_disp_1.5.q, aes(xintercept=ninth))
 
 f_disp_8.2 <- ggplot(dispatch_df[dispatch_df$District == "8" | dispatch_df$District == "2", ], aes(x=as.numeric(TimeToDispatch))) +
-          geom_density(alpha = .3) +
-          scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
+              geom_density(alpha = .3) +
+              scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
 
-f_disp_8.2 + facet_grid(District ~ .)
+  f_disp_8.2 + facet_grid(District ~ .)
