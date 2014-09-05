@@ -252,9 +252,11 @@ district_cluster_arriv <- which(ks_arrival > .05, arr.ind = T)
 #panel charts of distributions
 f_base <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch), fill = District)) +
           geom_density(alpha = .3) +
-          scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
+          scale_x_continuous(limits = c(0, 35), name = "Minutes between call and officer dispatch")
 
-  f_base + facet_grid(District ~ .)
+  f_base.q <- ddply(dispatch_df, "District", summarise, median = as.numeric(median(TimeToDispatch)), ninth = as.numeric(quantile(TimeToDispatch, .9)))
+
+  f_base + facet_grid(District ~ .) + geom_vline(data=f_base.q, aes(xintercept=median)) + geom_vline(data=f_base.q, aes(xintercept=ninth))
 
 f_disp_1.5 <- ggplot(dispatch_df[dispatch_df$District == "1" | dispatch_df$District == "5", ], aes(x=as.numeric(TimeToDispatch), fill = District)) +
               geom_density(alpha = .3) +
@@ -263,14 +265,18 @@ f_disp_1.5 <- ggplot(dispatch_df[dispatch_df$District == "1" | dispatch_df$Distr
   #creates dataframe with median and 90th percentile for facet grid call to iterate through
   f_disp_1.5.q <- data.frame( District = c(1, 5),
                               median = c(as.numeric(median(dispatch_df[dispatch_df$District == "1", ]$TimeToDispatch)), as.numeric(median(dispatch_df[dispatch_df$District == "5", ]$TimeToDispatch))),
-                              ninth = c(as.numeric(quantile(dispatch_df[dispatch_df$District == "1", ]$TimeToDispatch, .9)), as.numeric(quantile(dispatch_df[dispatch_df$District == "5", ]$TimeToDispatch, .9))),
-                              row.names = c("1st District", "5th District")
+                              ninth = c(as.numeric(quantile(dispatch_df[dispatch_df$District == "1", ]$TimeToDispatch, .9)), as.numeric(quantile(dispatch_df[dispatch_df$District == "5", ]$TimeToDispatch, .9)))
                             )
 
   f_disp_1.5 + facet_grid(District ~ .) + geom_vline(data=f_disp_1.5.q, aes(xintercept=median)) + geom_vline(data=f_disp_1.5.q, aes(xintercept=ninth))
 
-f_disp_8.2 <- ggplot(dispatch_df[dispatch_df$District == "8" | dispatch_df$District == "2", ], aes(x=as.numeric(TimeToDispatch))) +
+f_disp_8.2 <- ggplot(dispatch_df[dispatch_df$District == "8" | dispatch_df$District == "2", ], aes(x=as.numeric(TimeToDispatch), fill = District)) +
               geom_density(alpha = .3) +
-              scale_x_continuous(limits = c(0, 20), name = "Minutes between call and officer dispatch")
+              scale_x_continuous(limits = c(0, 35), name = "Minutes between call and officer dispatch")
 
-  f_disp_8.2 + facet_grid(District ~ .)
+  f_disp_8.2.q <- data.frame( District = c(8, 2),
+                              median = c(as.numeric(median(dispatch_df[dispatch_df$District == "8", ]$TimeToDispatch)), as.numeric(median(dispatch_df[dispatch_df$District == "2", ]$TimeToDispatch))),
+                              ninth = c(as.numeric(quantile(dispatch_df[dispatch_df$District == "8", ]$TimeToDispatch, .9)), as.numeric(quantile(dispatch_df[dispatch_df$District == "2", ]$TimeToDispatch, .9)))
+                            )
+
+  f_disp_8.2 + facet_grid(District ~ .) + geom_vline(data=f_disp_8.2.q, aes(xintercept=median)) + geom_vline(data=f_disp_8.2.q, aes(xintercept=ninth))
