@@ -259,13 +259,13 @@ f_base <- ggplot(dispatch_df, aes(x=as.numeric(TimeToDispatch), fill = District)
           geom_density(alpha = .3) +
           geom_hline(yintercept = 0, colour = "#999999", size = .6) +
           geom_vline(xintercept = 0, colour = "#999999", size = .6) +
-          scale_x_continuous(limits = c(0, 35), name = "Minutes between call and officer dispatch")
+          scale_x_continuous(limits = c(0, 300), name = "Minutes between call and officer dispatch")
 
   f_base.q <- ddply(dispatch_df, "District", summarise, median = as.numeric(median(TimeToDispatch)), ninth = as.numeric(quantile(TimeToDispatch, .9)))
 
   f_base + facet_grid(District ~ .) +
             geom_vline(data=f_base.q, aes(xintercept=median)) +
-            geom_vline(data=f_base.q, aes(xintercept=ninth)) +
+            geom_vline(data=f_base.q, aes(xintercept=ninth), linetype = "dashed") +
             ggsave("facet-all.png", width = 8.5, height = 11)
 
 f_disp_1.5 <- ggplot(dispatch_df[dispatch_df$District == "1" | dispatch_df$District == "5", ], aes(x=as.numeric(TimeToDispatch), fill = District)) +
